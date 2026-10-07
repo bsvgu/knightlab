@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#17372f" />
+    <meta name="description" content="Local chess trainer with timed puzzles, puzzle imports, and Stockfish move evaluation." />
+    <title>Knightlab · Chess Training</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+    <template id="local-file-style"><style>
+      body.file-preview-mode{margin:0;background:#f7f7f1;color:#20382f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+      body.file-preview-mode .app-shell{display:none}
+      #local-file-message{max-width:520px;width:100%;box-sizing:border-box;padding:38px;background:#fffef9;border:1px solid #dedfd6;border-radius:20px;box-shadow:0 18px 48px #17372f0d}
+      #local-file-message .file-brand{display:flex;align-items:center;gap:12px;font-family:Georgia,serif;font-size:28px;margin-bottom:30px}
+      #local-file-message .file-brand span{display:grid;place-items:center;background:#17372f;color:#f0ddbb;width:42px;height:46px;border-radius:11px;font-size:32px}
+      #local-file-message h1{font-family:Georgia,serif;font-size:34px;font-weight:400;line-height:1.2;letter-spacing:-1px;margin:0 0 16px}
+      #local-file-message p,#local-file-message li{font-size:14px;line-height:1.8;color:#778078}
+      #local-file-message p{margin:0 0 22px}
+      #local-file-message ol{padding-left:22px;margin:0 0 28px}
+      #local-file-message li{padding-left:4px;margin-bottom:10px}
+      #local-file-message strong{color:#20382f;font-weight:600}
+      #local-file-message code{background:#eff1e8;color:#315b42;border-radius:5px;padding:3px 6px;font-size:12px;overflow-wrap:anywhere}
+      #local-file-message .file-open-link{display:inline-flex;align-items:center;justify-content:space-between;gap:30px;padding:14px 18px;border-radius:9px;background:#17372f;color:#fffef9;font-size:13px;font-weight:600;text-decoration:none}
+      #local-file-message .file-open-link:focus-visible{outline:3px solid #e39662;outline-offset:4px}
+      @media(max-width:520px){#local-file-message{padding:28px}#local-file-message h1{font-size:30px}}
+    </style></template>
+    <script type="module" src="/app.js" onerror="if(location.protocol==='file:'){const show=()=>{document.head.append(document.getElementById('local-file-style').content.cloneNode(true));document.body.classList.add('file-preview-mode');document.getElementById('local-file-message').hidden=false;};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show,{once:true});else show();}"></script>
+  </head>
+  <body>
+    <section id="local-file-message" hidden aria-label="Start the local Knightlab app">
+      <div class="file-brand"><span aria-hidden="true">♞</span>Knightlab</div>
+      <h1>Start the local server</h1>
+      <p>Knightlab needs its local server to run. Opening this HTML file directly cannot start the app.</p>
+      <ol>
+        <li>Extract the project folder and install <strong>Python 3.11 or newer</strong> if needed.</li>
+        <li>In the project folder, double-click <strong>start.bat</strong> on Windows or <strong>Start.command</strong> on macOS. On Linux, run <code>./start.sh</code>.</li>
+        <li>Keep the Terminal window open, then visit <code>http://127.0.0.1:8765</code>.</li>
+      </ol>
+      <a class="file-open-link" href="http://127.0.0.1:8765">Open Knightlab <span aria-hidden="true">↗</span></a>
+    </section>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#mate" aria-label="Knightlab home"><span class="brand-mark" aria-hidden="true">♞</span><span>Knightlab<span class="brand-subtitle">CHESS TRAINER</span></span></a>
+        <div class="nav-label">TRAIN</div>
+        <nav class="mode-nav" aria-label="Training modes">
+          <button data-mode="mate" class="nav-item active"><span class="nav-icon">♜</span><span>Mate Sprint<small>Timed checkmate puzzles</small></span><span class="nav-arrow">↗</span></button>
+          <button data-mode="tactics" class="nav-item"><span class="nav-icon">♝</span><span>Tactics Sprint<small>Timed puzzles by category</small></span><span class="nav-arrow">↗</span></button>
+          <button data-mode="intuition" class="nav-item"><span class="nav-icon">✦</span><span>Intuition<small>Engine move evaluation</small></span><span class="nav-arrow">↗</span></button>
+          <button data-mode="free" class="nav-item"><span class="nav-icon">♙</span><span>Free Practice<small>Puzzles without a timer</small></span><span class="nav-arrow">↗</span></button>
+        </nav>
+        <div class="nav-label library-label">LIBRARY</div>
+        <button data-mode="library" class="nav-item"><span class="nav-icon">▦</span><span>Puzzle Library<small id="library-nav-count">Loading puzzles…</small></span><span class="nav-arrow">↗</span></button>
+        <div class="sidebar-bottom">
+          <div class="local-badge"><span class="status-dot"></span> LOCAL DATA</div>
+          <p>Completed sessions and imported positions are stored on this computer.</p>
+          <button id="about-button" class="text-button light">About Knightlab <span>↗</span></button>
+        </div>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Training</span><span class="breadcrumb-separator">/</span><strong id="breadcrumb-mode">Mate Sprint</strong></div>
+          <div class="topbar-status"><span id="engine-status" class="engine-badge"><span class="status-dot"></span>Checking engine…</span><span class="local-icon" title="Local app">⌂</span></div>
+        </header>
+        <div id="global-error" class="global-error" hidden role="alert"><span id="global-error-text"></span><button id="dismiss-error" aria-label="Dismiss error">×</button></div>
+        <section id="trainer-view" class="trainer-view">
+          <div class="page-heading"><div><p class="eyebrow" id="mode-eyebrow">TIMED CHECKMATE PUZZLES</p><h1 id="mode-title">Mate in 2</h1><p class="page-description" id="mode-description">Solve mate-in-2 puzzles in a 3- or 5-minute session. Solved puzzles advance automatically.</p></div><div class="heading-number" aria-hidden="true" id="heading-number">02<span>MOVES TO MATE</span></div></div>
+          <section id="session-stats" class="session-stats" aria-label="Session statistics"><div><span class="stat-label">TIME LEFT</span><strong id="stat-time">03:00</strong></div><div><span class="stat-label">LIVES</span><strong id="stat-lives" class="hearts">♥ ♥ ♥</strong></div><div><span class="stat-label" id="score-label">SOLVED</span><strong id="stat-score">00</strong></div><div><span class="stat-label" id="rating-label">TARGET RATING</span><strong id="stat-rating">800<span class="stat-unit">+</span></strong></div><span class="session-state" id="session-state">NO ACTIVE SESSION</span></section>
+          <div class="training-grid">
+            <section class="board-section" aria-label="Chess challenge">
+              <div class="board-header"><div class="player-label"><span class="player-dot white" id="player-dot"></span><strong id="player-label">White to play</strong></div><div class="board-tools"><label class="drag-option" title="Drag a piece to a highlighted square, or click to move"><input id="drag-pieces" type="checkbox" checked>Drag pieces</label><button id="flip-board" class="icon-button" title="Flip board" aria-label="Flip board">⇅</button><button id="board-help" class="icon-button" title="How to play" aria-label="How to play">?</button></div></div>
+              <div class="board-wrap"><div id="chess-board" class="chess-board" role="group" aria-label="Chess board"></div><div id="board-loading" class="board-loading" hidden><span class="spinner"></span><span>Preparing position…</span></div><div id="empty-board" class="empty-board" hidden><span>♞</span><strong>No puzzles available</strong><p>Import puzzle data, then start a session.</p><button id="empty-import" class="primary-button">Open puzzle library ↗</button></div></div>
+              <div class="board-footer"><div><span class="tiny-label" id="position-kicker">POSITION PREVIEW</span><span id="position-meta">Imported puzzle data</span></div><a id="game-link" class="source-link" hidden target="_blank" rel="noopener noreferrer">View game ↗</a></div>
+              <div id="move-feedback" class="move-feedback" hidden role="status" aria-live="polite"></div>
+              <div id="session-actions" class="session-actions" hidden><button id="next-button" class="primary-button">Next position <span>→</span></button><button id="stop-button" class="secondary-button">End session</button></div>
+              <div id="summary-panel" class="summary-panel" hidden aria-live="polite"></div>
+            </section>
+            <aside class="training-aside">
+              <section id="setup-panel" class="panel setup-panel">
+                <div class="panel-heading"><h2>Session settings</h2><span class="step-badge">01</span></div>
+                <p id="setup-description" class="muted">Select category, duration, lives, and starting rating.</p>
+                <form id="session-form">
+                  <div class="field" id="theme-field"><label for="session-theme">Puzzle category</label><select id="session-theme"><option value="mateIn2">Mate in 2</option></select></div>
+                  <div class="field" id="duration-field"><span class="field-label">Time limit</span><div class="segmented" role="group" aria-label="Session duration"><button type="button" data-duration="180" class="selected">3 minutes</button><button type="button" data-duration="300">5 minutes</button></div></div>
+                  <div class="field-row"><div class="field" id="lives-field"><label for="session-lives">Lives</label><select id="session-lives"><option value="3">3 lives</option><option value="1">1 life</option><option value="5">5 lives</option></select></div><div class="field" id="rating-field"><label for="session-rating">Starting rating</label><input id="session-rating" type="number" min="0" max="3500" step="100" value="800" /></div></div>
+                  <div id="intuition-settings" hidden><div class="field"><span class="field-label">Positions per session</span><div class="segmented" role="group" aria-label="Position count"><button type="button" data-positions="10" class="selected">10 positions</button><button type="button" data-positions="20">20 positions</button></div></div><div class="range-info"><span>Evaluation window</span><strong>+1.0 — +3.0</strong><small>From the player-to-move perspective</small></div><div id="intuition-engine-warning" class="inline-warning" hidden>Stockfish is required. Set up the local engine to enable this mode.</div></div>
+                  <button id="start-button" type="submit" class="primary-button start-button">Start Mate Sprint <span>→</span></button>
+                </form>
+                <p class="setup-footnote" id="setup-footnote"><span>↗</span> Solved puzzles increase the target rating by 100, up to 4,000.</p>
+              </section>
+              <section class="panel guide-panel"><div class="guide-icon" id="guide-icon">♜</div><h2 id="guide-title">Move input and puzzle rules</h2><p id="guide-text">Drag a piece to a highlighted square, or click the piece and destination. Play all solution moves. Opponent replies and the next puzzle load automatically.</p><div class="guide-detail" id="guide-detail"><span class="small-dot"></span> An incorrect legal move costs one life. Illegal moves do not.</div></section>
+              <section class="progress-panel"><div class="progress-heading"><span class="tiny-label">SESSION HISTORY</span><span>↗</span></div><div class="progress-numbers"><div><strong id="history-solved">0</strong><span>positions completed</span></div><div><strong id="history-sessions">0</strong><span>completed sessions</span></div></div><div class="progress-footer" id="history-extra">Completed sessions are stored locally.</div></section>
+            </aside>
+          </div>
+          <section id="recap-section" class="recap-section" hidden><div class="section-title"><h2>Intuition results</h2><span class="muted">Training score, not a competitive rating</span></div><div id="recap-list"></div></section>
+        </section>
+        <section id="library-view" class="library-view" hidden>
+          <div class="page-heading"><div><p class="eyebrow">PUZZLE DATA</p><h1>Puzzle library</h1><p class="page-description">Filter puzzles by category and rating, sort positions, or import puzzle files.</p></div><span class="library-total" id="library-total">0<span>POSITIONS</span></span></div>
+          <section class="import-panel"><div><span class="tiny-label">IMPORT DATA</span><h2>Import puzzles or games</h2><p>Puzzle formats: Lichess CSV, compressed .csv.zst, or JSON.<br />PGN imports create Intuition positions using Stockfish.</p></div><div class="import-actions"><button id="import-puzzles-button" class="primary-button">Import puzzles <span>↗</span></button><button id="import-pgn-button" class="secondary-button">Import game PGN <span>↗</span></button><input id="puzzle-file" type="file" accept=".csv,.json,.zst" hidden /><input id="pgn-file" type="file" accept=".pgn" hidden /></div><div id="import-feedback" class="import-feedback" hidden role="status" aria-live="polite"></div></section>
+          <section class="library-content"><div class="library-toolbar"><div class="search-field"><span aria-hidden="true">⌕</span><input id="library-search" type="search" placeholder="Search themes or puzzle ID…" aria-label="Search puzzle library" /></div><select id="library-theme" aria-label="Filter by category"><option value="">All categories</option></select><select id="library-sort" aria-label="Sort puzzles"><option value="rating_asc">Rating: low to high</option><option value="rating_desc">Rating: high to low</option><option value="random">Random order</option></select></div><div class="rating-filters"><span class="field-label">Rating range</span><label><span class="sr-only">Minimum rating</span><input type="number" id="library-min-rating" min="0" max="4000" step="100" value="0" /></label><span>—</span><label><span class="sr-only">Maximum rating</span><input type="number" id="library-max-rating" min="0" max="4000" step="100" value="3000" /></label><button id="library-apply" class="text-button">Apply filters →</button><span id="library-result-count" class="result-count"></span></div><div id="library-loading" class="library-loading" hidden><span class="spinner"></span>Loading positions…</div><div id="library-items" class="library-items"></div><div class="library-pagination"><button id="library-prev" class="secondary-button">← Previous</button><span id="library-page-info">Page 1</span><button id="library-next" class="secondary-button">Next →</button></div></section>
+        </section>
+        <footer class="main-footer"><span>Knightlab <span class="footer-dot">·</span> Local chess trainer</span><span>Local server · Open-source software</span></footer>
+      </main>
+    </div>
+    <dialog id="promotion-dialog" class="modal"><div class="modal-heading"><h2>Pawn promotion</h2><button type="button" data-close-dialog="promotion-dialog" class="icon-button" aria-label="Cancel promotion">×</button></div><p class="muted">Select the piece for this promotion.</p><div id="promotion-options" class="promotion-options"></div></dialog>
+    <dialog id="replace-dialog" class="modal"><h2>Start a new session?</h2><p>The current session will end and its results will be saved.</p><div class="modal-actions"><button id="replace-cancel" class="secondary-button">Keep current session</button><button id="replace-confirm" class="primary-button">End &amp; start new</button></div></dialog>
+    <dialog id="about-dialog" class="modal about-modal"><div class="modal-heading"><h2>About Knightlab</h2><button type="button" data-close-dialog="about-dialog" class="icon-button" aria-label="Close">×</button></div><p>Knightlab runs on your computer. Sessions and imported puzzles stay in your local database.</p><h3>Board controls</h3><p>Drag a piece to a highlighted destination, or click the piece and destination. Turn off Drag pieces above the board for click-only play. Your move and the opponent’s reply animate in sequence. You can also use the arrow keys to move around the board and Enter or Space to select a square. Play the complete puzzle line. Timed sprints advance automatically after each solution; Free Practice and Intuition use Next.</p><h3>How intuition is scored</h3><p>Stockfish evaluates real-game positions and your move from the same player's perspective. Centipawn loss is the difference between the best move and your move. The training score is <code>100 × exp(−loss / 200)</code>. It is not an Elo rating or Lichess accuracy.</p><h3>Import formats</h3><p>Puzzles: Lichess CSV / CSV.zst, or the JSON schema documented in the project README. Intuition: a PGN of real games, analyzed by your local Stockfish engine.</p></dialog>
+    <div class="sr-only" id="screenreader-status" role="status" aria-live="polite"></div>
+  </body>
+</html>

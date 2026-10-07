@@ -1,0 +1,54 @@
+name: Tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.13']
+        include:
+          - os: macos-latest
+            python-version: '3.13'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/install_stockfish.py
+      - run: python -m pytest
+      - run: python scripts/build_demo_data.py --validate
+      - name: Windows launcher smoke test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m venv --system-site-packages .venv
+          $process = Start-Process cmd.exe -ArgumentList '/d /c start.bat' -PassThru -RedirectStandardOutput 'launcher-stdout.log' -RedirectStandardError 'launcher-stderr.log'
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 90; $attempt++) {
+              try {
+                $status = Invoke-RestMethod 'http://127.0.0.1:8765/api/status' -TimeoutSec 2
+                if ($status.counts.puzzles -gt 0 -and $status.engine.available) {
+                  $ready = $true
+                  break
+                }
+              } catch {}
+              Start-Sleep -Seconds 1
+            }
+            if (-not $ready) {
+              Get-Content launcher-stdout.log, launcher-stderr.log
+              throw 'Windows launcher did not start the app with a working engine.'
+            }
+            $page = Invoke-WebRequest 'http://127.0.0.1:8765/'
+            if ($page.StatusCode -ne 200 -or $page.Content -notmatch 'Knightlab') {
+              throw 'Windows launcher did not serve the training page.'
+            }
+          } finally {
+            taskkill /PID $process.Id /T /F 2>$null
+          }
