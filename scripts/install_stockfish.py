@@ -39,7 +39,11 @@ def install() -> Path:
     runtime.mkdir(exist_ok=True)
     destination = runtime / ("stockfish.exe" if os.name == "nt" else "stockfish")
     with httpx.Client(follow_redirects=True, timeout=120, headers={"User-Agent": "Knightlab-local-setup"}) as client:
-        release = client.get(f"https://api.github.com/repos/official-stockfish/Stockfish/releases/tags/{RELEASE}")
+        # Hosted CI runners share unauthenticated API limits. Use their optional
+        # token only for release metadata, never for the binary download.
+        token = os.environ.get("GITHUB_TOKEN")
+        metadata_headers = {"Authorization": f"Bearer {token}"} if token else {}
+        release = client.get(f"https://api.github.com/repos/official-stockfish/Stockfish/releases/tags/{RELEASE}", headers=metadata_headers)
         release.raise_for_status()
         asset = next((item for item in release.json()["assets"] if item["name"] == name), None)
         if not asset:
